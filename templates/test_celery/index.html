@@ -1,0 +1,153 @@
+<%inherit file="/base.html"/>
+
+<%block name="content">
+    <div class="page-contactus">
+        <!-- 内容 start-->
+        <!--comtactus-detail -->
+        <div class="container mt25">
+            <div class="tab-box">
+                <ul class="nav nav-tabs king-nav-tabs2 king-tab-info">
+                    <li class="active">
+                        <a href="###">后台任务</a>
+                    </li>
+                    <li>
+                        <a href="${SITE_URL}test_celery/periodic_task/">周期任务</a>
+                    </li>
+                </ul>
+                <div class="tab-content mb20">
+                    <div class="tab-pane fade in active">
+                        <form class="form-horizontal" method="POST" style="padding-top:20px" id="general_task_form">
+                            <div class="form-group has-feedback">
+                                <label class="control-label col-sm-3" for="message_text">消息：<span class="" style="color:red">*</span></label>
+                                <div class="col-sm-7">
+                                    <textarea class="form-control" rows="6" name="message_text" id="message_text" placeholder="请填写消息"></textarea>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="control-label col-sm-3">定时执行：</label>
+                                <div class="col-sm-7">
+                                    <div class="switchery_box" style="padding: 5px">
+                                        <input type="checkbox" name="do_schedule" id="do_schedule">
+                                    </div>
+                                </div>
+                            </div>
+                           <div class="form-group" id="timing" style="display: none;">
+                                <label class="control-label col-sm-3">定时时间：<span class="" style="color:red">*</span></label>
+                                <div class="col-sm-7">
+                                    <input type="text" class="form-control" name="schedule_time" id="schedule_time" placeholder="选择时间">
+                                </div>
+                                <div id="time_down" style="color: #4a9bff;"></div>
+                            </div>
+                            <div class="form-group">
+                                <div class="col-sm-7 col-sm-offset-3">
+                                    <button class="king-btn king-success mr10" onclick="excute_general_task(this)" id="sumbit_general_task">提交任务</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="tab-pane fade" ></div>
+                </div>
+            </div>
+        </div>
+        <!-- 内容 start-->
+    </div>
+</%block>
+<script type="text/javascript">
+    // 选择单个日期
+    $('#schedule_time').daterangepicker({
+        locale : {
+            format : 'YYYY-MM-DD HH:mm:ss'
+        },
+        autoApply: true,//选择日期后自动设置值
+        singleDatePicker : true,//单选选择一个日期
+        timePicker: true,//支持时间选择
+        timePicker24Hour: true,//开启24小时时间制
+        timePickerIncrement : 1, //分钟间隔
+        timePickerSeconds: true, //开启分钟选择
+        startDate: moment()
+    });
+    var changeCheckbox = document.querySelector('#do_schedule');
+    var switchery = new Switchery(changeCheckbox, { size: 'small' });
+    $('#do_schedule').on('change', function(){
+      if(changeCheckbox.checked){
+          $("#timing").show();
+      }else{
+          $("#timing").hide();
+      }
+    });
+    var validator = $('#general_task_form').validate({
+        errorElement: 'span',
+        errorClass: 'text-danger',
+        rules: {
+            message_text: {
+                required: true,
+            },
+        },
+        messages: {
+            message_text: "请填写消息",
+        }
+    });
+    function timedown(schedule_time){
+        var start_time = new Date(schedule_time);
+        var now_time = new Date(moment().format('YYYY-MM-DD HH:mm:ss'));
+        if(start_time >= now_time){
+            var time = start_time - now_time;
+            var day = parseInt(time / 1000 / 60 / 60 / 24);
+            var hour = parseInt(time / 1000 / 60 / 60 % 24);
+            var minute = parseInt(time / 1000 / 60 % 60);
+            var seconds = parseInt(time / 1000 % 60);
+            $('#time_down').html(day + "天 " + hour + "小时 " + minute + "分钟 " + seconds + "秒");
+            setTimeout(function(){
+                timedown(schedule_time);
+            }, 1000);
+        }
+    }
+    /*
+     * 轮询任务状态
+    */
+    function poll_general_task_status(record_id){
+        $.get("${SITE_URL}test_celery/poll_general_task_status/", {'record_id': record_id}, function(res){
+            if(res.status == 0){
+                art.dialog({id: 'bktips', width: 300,icon: 'error',lock: true,content: '查询任务状态失败'}).time(2);
+                $("#sumbit_general_task").attr("disabled", false).html("提交任务");
+            }else if(res.status == 1){
+                art.dialog({title: res.title, id: 'bktips', width: 300,icon: 'succeed',lock: true,content: res.content});
+                $("#sumbit_general_task").attr("disabled", false).html("提交任务");
+            }else{
+                setTimeout(function(){
+                    poll_general_task_status(record_id);
+                }, 1*1000);
+            }
+        }, 'json');
+    }
+    /*
+     * 执行任务
+     */
+    function excute_general_task(obj){
+        $(obj).attr("disabled", true).html("<i class='icon-loading'></i>正在提交");
+        var do_schedule = $('#do_schedule').is(":checked")?1:0;
+        var schedule_time = $('#schedule_time').val();
+        if(validator.form()){
+            var params = {
+                'message': $("#message_text").val(),
+                "do_schedule": do_schedule,
+                "schedule_time": schedule_time
+            }
+            $.post("${SITE_URL}test_celery/excute_general_task/", params, function(res){
+                if(res.result){
+                    art.dialog({id: 'bktips', width: 300,icon: 'succeed',lock: true,content: '任务创建成功，正在后台执行'}).time(2);
+                    $(obj).attr("disabled", true).html("提交成功");
+                    if(do_schedule == 1){
+                        timedown(schedule_time);
+                    }
+                    poll_general_task_status(res.record_id);
+                }else{
+                    art.dialog({id: 'bktips', width: 300,icon: 'error',lock: true,content: res.message}).time(2);
+                    $(obj).attr("disabled", false).html("提交任务");
+                }
+            }, 'json');
+        }else{
+            $(obj).attr("disabled", false).html("提交任务");
+        }
+    }
+</script>

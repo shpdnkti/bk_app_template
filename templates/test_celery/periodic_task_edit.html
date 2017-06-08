@@ -1,0 +1,232 @@
+<%inherit file="/base.html"/>
+
+<%block name="content">
+    <div class="page-contactus">
+        <!-- 内容 start-->
+        <!--comtactus-detail -->
+        <div class="container mt25">
+            <div class="tab-box">
+                <ul class="nav nav-tabs king-nav-tabs2 king-tab-info">
+                    <li>
+                        <a href="${SITE_URL}test_celery/">后台任务</a>
+                    </li>
+                    <li class="active">
+                        <a href="###">周期任务</a>
+                    </li>
+                </ul>
+                <div class="tab-content mb20">
+                    <div class="tab-pane fade"></div>
+                    <div class="tab-pane fade in active">
+                        <a class="king-btn king-info king-btn-small mt10 mr15" style="float: right;" href="${SITE_URL}test_celery/periodic_task/">返回</a>
+                        <div id="periodic_task_param" style="padding: 10px 15px 25px 15px">
+                            <input type="hidden" id="periodic_task_id" value="${task_id}"/>
+                            <textarea id="task_args_old_id" style="display: none">${task_args}</textarea>
+                            <textarea id="task_text_id" style="display: none">${task}</textarea>
+                            <div class="panel-body  form-horizontal" id="custom_func">
+                                <div class="form-group">
+                                    <label for="" class="col-md-2 control-label">任务：</label>
+                                    <div class="col-md-10">
+                                        <label  style="margin-top: 5px">${task}</label>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="" class="col-md-2 control-label">任务参数：<span class="" style="color:red">*</span></label>
+                                    <div class="col-md-10">
+                                        <span>X ：</span>
+                                        <input type="number" name="task_args1" value="${task_args1}" useage="1" required="required" style="width: 50px"/>
+                                        <span style="margin-left: 30px">Y ：</span>
+                                        <input type="number" name="task_args2" value="${task_args2}" useage="1" required="required" style="width: 50px"/>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="" class="col-md-2 control-label">Crontab 策略：<span class="" style="color:red">*</span></label>
+                                    <div class="col-md-10">
+                                        <span>分：</span>
+                                            <input  id="minute_id" name="minute"  value="${cron_schedule.minute if cron_schedule else '*'}" style="width: 56px" class="input-append span1"  useage="1" required="required" />
+                                        <span style="margin-left: 30px">时：</span>
+                                            <input  id="hour_id" value="${cron_schedule.hour if cron_schedule else '*'}" name="hour" style="width: 56px" class="input-append span1"  useage="1" required="required" />
+                                        <span style="margin-left: 30px">日：</span>
+                                            <input  id="day_of_month_id" value="${cron_schedule.day_of_month if cron_schedule else '*'}" name="day_of_month" style="width: 56px" class="input-append span1"  useage="1" required="required"/>
+                                        <span style="margin-left: 30px">月：</span>
+                                            <input id="month_of_year_id" value="${cron_schedule.month_of_year if cron_schedule else '*'}" name="month_of_year" style="width: 56px" class="input-append span1"  useage="1" required="required" />
+                                        <span style="margin-left: 30px">周：</span>
+                                            <input id="day_of_week_id" value="${cron_schedule.day_of_week if cron_schedule else '*'}" name="day_of_week" style="width: 56px" class="input-append span1"  useage="1" required="required" />
+                                        <div style="color:#999999" class="ml150">周期参数的输入与 crontab 语法一致</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="alert alert-info" style="margin: 10px">
+                                <span class="label label-info">温馨提示:</span>
+                                <p style="margin-top: 5px;">1.新建、修改任务的 执行参数 和 crontab策略，也可以通过<code>admin</code>页面，直接操作<code>PeriodicTask</code>表来完成</p>
+                                <p>2.相同任务，相同参数的周期任务只允许有一条记录；相同任务，相同参数、不同调度策略的任务可以通过<code>crontab策略</code>的配置合并为一个任务</p>
+                            </div>
+                            <div style="text-align: center;">
+                                % if task_id == '0':
+                                    <button id="save_params" type="button" class="btn btn-box btn-primary" onclick="save_peroid_task(this)" >新建任务并运行</button>
+                                % else:
+                                    <button id="save_params" type="button" class="btn btn-box btn-primary" onclick="save_peroid_task(this)" >修改任务</button>
+                                % endif
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- 内容 start-->
+    </div>
+</%block>
+<script type="text/javascript">
+function show_msg(content, time){
+    art.dialog({id: 'bktips', width: 300,icon: 'error',lock: true,content: content}).time(time);
+}
+    /*
+ * 验证参数
+ */
+function validate(){
+    var flag = true;
+    var min_reg = /^((([1-5]{0,1}[0-9])|\*)((\/|-)([1-5]{0,1}[0-9]))*)(,(([1-5]{0,1}[0-9])|\*)((\/|-)([1-5]{0,1}[0-9]))*)*$/;
+    var hour_reg = /^((([0-9]|1[0-9]|2[0-3])|\*)((\/|-)([0-9]|1[0-9]|2[0-3]))*)(,(([0-9]|1[0-9]|2[0-3])|\*)((\/|-)([0-9]|1[0-9]|2[0-3]))*)*$/;
+    var day_reg = /^((([1-9]|[1-2][0-9]|3[0-1])|\*)((\/|-)([1-9]|[1-2][0-9]|3[0-1]))*)(,(([1-9]|[1-2][0-9]|3[0-1])|\*)((\/|-)([1-9]|[1-2][0-9]|3[0-1]))*)*$/;
+    var mon_reg = /^((([1-9]|1[0-2])|\*)((\/|-)([1-9]|1[0-2]))*)(,(([1-9]|1[0-2])|\*)((\/|-)([1-9]|1[0-2]))*)*$/;
+    var week_reg = /^((([0-6])|\*)((\/|-)([0-6]))*)(,(([0-6])|\*)((\/|-)([0-6]))*)*$/;
+    //==== 验证参数，required=required====
+    $("select[required='required'],input[required='required'], textarea[required='required']", "#periodic_task_param").each(function(){
+        var _name = $(this).attr("name");
+        var _value = $(this).val().trim();
+        if(_value == ''){
+            // 验证参数的名称
+            var show_name = $(this).prev('span').text();
+            var validate_str = show_name+ "不能为空";
+            show_msg(validate_str, 4)
+            $(this).focus();
+            flag = false
+            return false;
+        }else if(_name == 'minute'){
+            if(!min_reg.test(_value)){
+                show_msg("Crontab 策略的分输入不合法", 4);
+                $(this).focus();
+                flag = false
+                return false;
+            }
+        }else if(_name == 'hour'){
+            if(!hour_reg.test(_value)){
+                show_msg("Crontab 策略的时输入不合法", 4);
+                $(this).focus();
+                flag = false
+                return false;
+            }
+        }else if(_name == 'day_of_month'){
+            if(!day_reg.test(_value)){
+                show_msg("Crontab 策略的日输入不合法", 4);
+                $(this).focus();
+                flag = false
+                return false;
+            }
+        }else if(_name == 'month_of_year'){
+            if(!mon_reg.test(_value)){
+                show_msg("Crontab 策略的月输入不合法", 4);
+                $(this).focus();
+                flag = false
+                return false;
+            }
+        }else if(_name == 'day_of_week'){
+            if(!week_reg.test(_value)){
+                show_msg("Crontab 策略的周输入不合法", 4);
+                $(this).focus();
+                flag = false
+                return false;
+            }
+        }
+    });
+    return flag;
+}
+/*
+ * 组装参数
+ */
+function get_params(){
+    var params = {},
+        _key = 'add_task',
+        _value = {};
+        $("select[useage='1'],input[useage='1'], textarea[useage='1']", "#periodic_task_param").each(function(){
+            if($(this).attr("name")){
+                _name = $(this).attr("name");
+                _value[_name] = $(this).val();
+            }
+            return;
+        });
+        params[_key] = _value;
+    var periodic_task_id = $("#periodic_task_id").val();
+    params['periodic_task_id'] = periodic_task_id;
+    return params;
+}
+/*
+ * 检查任务参数是否已存在（相同任务，相同参数的周期任务只允许有一条记录）
+ */
+function check_task(){
+    var task = $("#task_text_id").text().trim();
+    var task_args_old = $("#task_args_old_id").text().trim();
+    var task_args1 = $("input[name=task_args1]").val();
+    var task_args2 = $("input[name=task_args2]").val();
+    var url = site_url + 'test_celery/check_peroid_task/';
+    var flag = false;
+    $.ajax({
+        type: 'POST',
+        url: url,
+        data: {
+                'task':task,
+                'task_args_old': task_args_old,
+                'task_args1': task_args1,
+                'task_args2': task_args2
+        },
+        success: function(data){
+            if(data.result){
+                flag = true;
+            }else{
+                show_msg(data.message, 2);
+                flag = false;
+            }
+        },
+        dataType: 'json',
+        async: false,
+    });
+    return flag;
+}
+/*
+ * 执行任务
+ */
+function save_peroid_task(obj){
+    var periodic_task_id = $("#periodic_task_id").val();
+    if(periodic_task_id == '0'){
+        var show_name = "新建任务并运行";
+    }else{
+        var show_name = "修改任务";
+    }
+    $(obj).attr("disabled", true).html("<i class='icon-loading'></i>正在提交");
+    // TODO 验证参数
+    if(validate()){
+        var is_check = check_task();
+        console.log(is_check);
+        if(is_check){
+            params = get_params();
+            var url = site_url + 'test_celery/save_task/';
+            $.post(url,{
+                'periodic_task_id': periodic_task_id,
+                'params':  JSON.stringify(params)
+            }, function(data){
+                if(data.result){
+                    art.dialog({id: 'bktips', width: 300,icon: 'succeed',lock: true,content: '任务保存成功'}).time(2);
+                    // 刷新页面
+                    window.location.href = site_url +"test_celery/periodic_task/";
+                }else{
+                    show_msg(data.message, 4);
+                    $(obj).attr("disabled", false).html(show_name);
+                }
+            }, 'json');
+        }else{
+            $(obj).attr("disabled", false).html(show_name);
+        }
+    }else{
+        $(obj).attr("disabled", false).html(show_name);
+    }
+}
+</script>

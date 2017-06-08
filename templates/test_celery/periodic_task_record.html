@@ -1,0 +1,117 @@
+<%inherit file="/base.html"/>
+
+<%block name="content">
+    <style type="text/css">
+    .magic-desc {
+        position: relative;
+        padding-left: 10px;
+    }
+    .magic-desc:before {
+        content: '';
+        width: 3px;
+        height: 16px;
+        display: inline-block;
+        position: absolute;
+        background: #57a3f1;
+        top: 2px;
+        left: 0px;
+    }
+    </style>
+    <div class="page-contactus">
+        <!-- 内容 start-->
+        <!--comtactus-detail -->
+        <div class="container mt25">
+            <div class="tab-box">
+                <ul class="nav nav-tabs king-nav-tabs2 king-tab-info">
+                    <li>
+                        <a href="${SITE_URL}test_celery/">后台任务</a>
+                    </li>
+                    <li class="active">
+                        <a href="###">周期任务</a>
+                    </li>
+                </ul>
+                <div class="tab-content mb20">
+                    <div class="tab-pane fade"></div>
+                    <div class="tab-pane fade in active">
+                        <a class="king-btn king-info king-btn-small mt10 mr15" style="float: right;" href="${SITE_URL}test_celery/periodic_task/">返回</a>
+                        <div style="padding: 45px 15px 10px 15px">
+                            <table id="task_grid" class="table table-bordered">
+                                <thead>
+                                    <tr class="alert-success t_c">
+                                        <th>任务</th>
+                                        <th>任务参数(args)</th>
+                                        <th>任务参数(kwargs)</th>
+                                        <th>Crontab 策略</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>${task}</td>
+                                        <td>${task_args}</td>
+                                        <td>${task_kwargs}</td>
+                                        <td>${cron_schedule if cron_schedule else '--'}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <div class="magic-desc">任务执行记录</div>
+                            <table id="periodic_task_record" class="table table-bordered table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>执行时间</th>
+                                        <th>执行参数</th>
+                                        <th>执行结果</th>
+                                    </tr>
+                                </thead>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- 内容 start-->
+    </div>
+</%block>
+<script type="text/javascript">
+    //表格(DataTables)
+    var language = {
+        search: '搜索：',
+        lengthMenu: "每页显示 _MENU_ 记录",
+        zeroRecords: "没找到相应的数据！",
+        info: "分页 _PAGE_ / _PAGES_",
+        infoEmpty: "暂无数据！",
+        infoFiltered: "(从 _MAX_ 条数据中搜索)",
+        paginate: {
+            first: '首页',
+            last: '尾页',
+            previous: '上一页',
+            next: '下一页',
+        }
+    }
+    var periodic_task_record = $('#periodic_task_record').DataTable({
+        paging: true, //隐藏分页
+        ordering: false, //关闭排序
+        info: false, //隐藏左下角分页信息
+        searching: false, //关闭搜索
+        pageLength : 5, //每页显示几条数据
+        lengthChange: false, //不允许用户改变表格每页显示的记录数
+        language: language, //汉化
+        serverSide: true,
+        ajax: {
+            url: '${SITE_URL}test_celery/get_periodic_task_records/${task_id}/',
+        },
+        columnDefs: [
+            {
+                targets: 0,
+                data: "excute_time",
+            },
+            {
+                targets: 1,
+                data: "excute_param",
+            },
+            {
+                targets: 2,
+                data: "excute_result",
+            },
+        ]
+    });
+</script>

@@ -1,0 +1,40 @@
+<%inherit file="/base.html"/>
+<%block name="head">
+	${parent.head()}
+	<!-- 将底部的基本js 提前到 head -->
+	${parent.base_js()}
+	<%block name="base_js"></%block>
+	<!-- 将底部的基本js 提前到 head -->
+</%block>
+<%block name="content">
+    <div class="page-contactus">
+        <!-- 内容 start-->
+        <!--comtactus-detail -->
+        <div class="container mt25">
+			<div class="row" >
+			    <div id="params_div" class="col-md-12 form-columns-2">
+			    				<!-- 	 cc tag   	 -->
+			    	<section class="panel panel-default">
+						<div class="panel-heading">
+							<strong class="show_name">业务选择下拉框用法示例</strong>
+						</div>
+						<div class="panel-body  form-horizontal" id="task_name">
+							<%namespace name="tags_cc" module="tags.cc"/>
+							${ tags_cc.cc_app_select() }
+		                    <div class='alert alert-info t_s15'>
+		                        ${u'''<strong>用法详解：</strong>
+		                            业务下拉框
+		                            <p>在模板页面加入 ： <code><%namespace name="tags_cc" module="tags.cc"/></code></p>
+		                            <p>然后添加：<code>${ tags_cc.cc_app_select()}  //选择业务</code></p>
+		                            <p>或 <code>${ tags_cc.set_module_select(200) } //选择业务，并且指定下拉框宽度</code><p>
+		                            <p>@param px: 下拉框的宽度像素值 (支持str或int)<p>
+		                        '''}
+		                    </div>
+						</div>
+					</section>
+			    </div>
+			</div>
+        </div>
+        <!-- 内容 start-->
+    </div>
+</%block>
