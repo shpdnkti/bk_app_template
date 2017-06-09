@@ -22,10 +22,10 @@ from django.conf.global_settings import *
 # 应用基本信息配置 (请按照说明修改)
 # ==============================================================================
 # 在蓝鲸智云开发者中心 -> 点击应用ID -> 基本信息 中获取 APP_ID 和 APP_TOKEN 的值
-APP_ID = 'app-template'
-APP_TOKEN = 'a816b32b-3806-42d9-b5a8-73097a68bb46'
+APP_ID = 'll11'
+APP_TOKEN = '4c328d08-4236-4190-be7f-4f80ba608258'
 # 蓝鲸智云开发者中心的域名，形如：http://paas.bking.com
-BK_PAAS_HOST = 'http://paas.open.ied.com'
+BK_PAAS_HOST = 'http://paas.bking.com:80'
 
 # 是否启用celery任务
 IS_USE_CELERY = True
